@@ -16,10 +16,18 @@ function RagAI() {
   const endOfMessagesRef = useRef(null);
   const abortControllerRef = useRef(null);
   const fileInputRef = useRef(null);
+  const inputRef = useRef(null);  // Create ref for input element
 
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingMessage]);
+
+  useEffect(() => {
+    // Keep focus on input field when not processing files
+    if (!isTyping && !isProcessing && uploadedFiles.length > 0) {
+      inputRef.current?.focus();
+    }
+  }, [isTyping, isProcessing, messages, uploadedFiles]);
 
   // Add cleanup on unmount only, not on window unload
   useEffect(() => {
@@ -29,7 +37,7 @@ function RagAI() {
       }
       // Only cleanup when component unmounts
       if (sessionId) {
-        fetch(`http://localhost:8000/api/rag/cleanup/${sessionId}`, {
+        fetch(`http://localhost:8001/api/rag/cleanup/${sessionId}`, {
           method: 'DELETE'
         }).catch(console.error);
       }
@@ -76,7 +84,7 @@ function RagAI() {
         formData.append('session_id', sessionId);
       }
 
-      const response = await fetch('http://localhost:8000/api/rag/upload', {
+      const response = await fetch('http://localhost:8001/api/rag/upload', {
         method: 'POST',
         body: formData,
       });
@@ -140,7 +148,7 @@ function RagAI() {
 
     try {
       console.log('Sending request with:', { sessionId, fileId }); // Debug log
-      const res = await fetch('http://localhost:8000/api/rag/query', {
+      const res = await fetch('http://localhost:8001/api/rag/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -183,6 +191,10 @@ function RagAI() {
     } finally {
       setIsTyping(false);
       abortControllerRef.current = null;
+      // Ensure input is focused after response
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
     }
   };
 
@@ -323,8 +335,10 @@ function RagAI() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                ref={inputRef}  // Add ref to input
+                autoFocus  // Add autoFocus
                 placeholder="Ask about your document..."
-                className="flex-1 bg-zinc-900/60 backdrop-blur-sm text-white rounded-lg px-4 py-3 focus:outline-none placeholder-gray-500"
+                className="flex-1 bg-zinc-900/60 backdrop-blur-sm text-white rounded-lg px-4 py-3 focus:outline-none placeholder-gray-500 cursor-default"
                 disabled={isTyping}
               />
               <button
@@ -345,4 +359,4 @@ function RagAI() {
   );
 }
 
-export default RagAI; 
+export default RagAI;

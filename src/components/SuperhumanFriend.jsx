@@ -17,10 +17,18 @@ function SuperhumanFriend() {
   const [streamingMessage, setStreamingMessage] = useState('');
   const endOfMessagesRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const inputRef = useRef(null);  // Add input ref
 
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingMessage]);
+
+  useEffect(() => {
+    // Keep focus on input field
+    if (!isTyping) {
+      inputRef.current?.focus();
+    }
+  }, [isTyping, messages]); // Re-run when typing status or messages change
 
   useEffect(() => {
     return () => {
@@ -85,6 +93,10 @@ function SuperhumanFriend() {
     } finally {
       setIsTyping(false);
       abortControllerRef.current = null;
+      // Ensure input is focused after response
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
     }
   };
 
@@ -156,8 +168,10 @@ function SuperhumanFriend() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            ref={inputRef}  // Add ref to input
+            autoFocus  // Add autoFocus
             placeholder="Type your message..."
-            className="flex-1 bg-zinc-900/60 backdrop-blur-sm text-white rounded-lg px-4 py-3 focus:outline-none placeholder-gray-500"
+            className="flex-1 bg-zinc-900/60 backdrop-blur-sm text-white rounded-lg px-4 py-3 focus:outline-none placeholder-gray-500 cursor-default"
             disabled={isTyping}
           />
           <button
